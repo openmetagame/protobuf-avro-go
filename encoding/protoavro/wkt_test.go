@@ -41,6 +41,12 @@ func Test_WKT(t *testing.T) {
 			},
 		},
 
+		// value
+		structpb.NewBoolValue(true),
+		structpb.NewStringValue("value"),
+		structpb.NewNumberValue(123.456),
+		structpb.NewNullValue(),
+
 		// timestamp
 		timestamppb.New(time.Now().Truncate(time.Microsecond)), // nano second precision not expressible in avro
 		timestamppb.New(time.Unix(-100, 0)),

@@ -4,6 +4,7 @@ const (
 	Timestamp   = "google.protobuf.Timestamp"
 	Duration    = "google.protobuf.Duration"
 	Struct      = "google.protobuf.Struct"
+	Value       = "google.protobuf.Value"
 	Any         = "google.protobuf.Any"
 	TimeOfDay   = "google.type.TimeOfDay"
 	Date        = "google.type.Date"

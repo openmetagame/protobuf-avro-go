@@ -31,6 +31,7 @@ func isWKT(name protoreflect.FullName) bool {
 		wkt.StringValue,
 		wkt.BytesValue,
 		wkt.Struct,
+		wkt.Value,
 		wkt.Any,
 		wkt.Timestamp,
 		wkt.Duration,
@@ -59,6 +60,8 @@ func schemaWKT(message protoreflect.MessageDescriptor) (avro.Schema, error) {
 		return schema, nil
 	case wkt.Struct:
 		return schemaStruct(), nil
+	case wkt.Value:
+		return schemaValue(), nil
 	case wkt.Any:
 		return schemaAny(), nil
 	case wkt.Timestamp:
@@ -96,6 +99,12 @@ func (o SchemaOptions) encodeWKT(message protoreflect.Message, useUnion bool) (i
 			return nil, err
 		}
 		return value, nil
+	case wkt.Value:
+		value, err := o.encodeValue(message.Interface().(*structpb.Value))
+		if err != nil {
+			return nil, err
+		}
+		return value, nil
 	case wkt.Any:
 		value, err := o.encodeAny(message.Interface().(*anypb.Any))
 		if err != nil {
@@ -126,6 +135,8 @@ func decodeWKT(data map[string]interface{}, msg protoreflect.Message) error {
 		value, err = decodeDate(data)
 	case wkt.Struct:
 		value, err = decodeStruct(data)
+	case wkt.Value:
+		value, err = decodeValue(data)
 	case wkt.TimeOfDay:
 		value, err = decodeTimeOfDay(data)
 	case wkt.Duration:
@@ -332,6 +343,34 @@ func decodeAny(v map[string]interface{}) (*anypb.Any, error) {
 		return nil, fmt.Errorf("google.protobuf.Any: unmarshal: %w", err)
 	}
 	return &value, nil
+}
+
+// schema value
+func schemaValue() avro.Schema {
+	return avro.Nullable(avro.String()) // EncodeJSON string
+}
+
+func (o *SchemaOptions) encodeValue(a *structpb.Value) (map[string]interface{}, error) {
+	data, err := protojson.Marshal(a)
+	if err != nil {
+		return nil, fmt.Errorf("google.protobuf.Struct: marshal: %w", err)
+	}
+	return o.unionValue("string", string(data)), nil
+}
+
+func decodeValue(v map[string]interface{}) (*structpb.Value, error) {
+	if v == nil {
+		return nil, nil
+	}
+	str, err := decodeString(v, "string")
+	if err != nil {
+		return nil, fmt.Errorf("google.protobuf.Value: %w", err)
+	}
+	var strct structpb.Value
+	if err := protojson.Unmarshal([]byte(str), &strct); err != nil {
+		return nil, fmt.Errorf("google.protobuf.Value: unmarshal: %w", err)
+	}
+	return &strct, nil
 }
 
 func schemaStruct() avro.Schema {
